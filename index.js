@@ -66,7 +66,6 @@ function sendToNas(downloadUrl) {
           url: `http://${nasIP}:${nasPort}/downloadstation/V5/Task/AddUrl?sid=${sid}&url=${encodeURIComponent(downloadUrl)}&temp=${temp}&move=${move}`,
           onload: function({response}) {
             const taskData = JSON.parse(response || {});
-            console.log('taskData', taskData)
             if (taskData && taskData.error === 0) {
               alert("Download started on NAS!");
             } else {

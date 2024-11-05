@@ -1,7 +1,7 @@
 # Download on QNAP NAS
 Download links or magnet links on QNAP NAS via Download Station
 
-First configure NAS settings (ip,port,login,pass)
+First configure NAS settings (IP,Port,Login,Password...)
 
 Options available:
 - Enter url manually via "Download from Manual Link"
