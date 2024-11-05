@@ -56,7 +56,7 @@ function sendToNas(downloadUrl) {
     method: "POST",
     url: `http://${nasIP}:${nasPort}/downloadstation/V5/Misc/Login`,
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    data: `user=${username}&pass=${password}`,
+    data: `user=${username}&pass=${btoa(password)}`,
     onload: function({response}) {
       const sid = JSON.parse(response || {})?.sid
       if (sid) {
