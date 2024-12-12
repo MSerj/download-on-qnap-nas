@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            Download on QNAP NAS
 // @description     Download links or magnet links on QNAP NAS via Download Station, you can input url manually or right-click on the link and then hit on "Download from Last Link"
-// @version         1.01
+// @version         1.02
 // @match           *://*/*
 // @run-at          document-end
 // @grant           none
@@ -22,6 +22,7 @@
 async function setUpNasSettings() {
   const nasIP = prompt("Enter your NAS IP address:", GM_getValue("nasIP", ""));
   const nasPort = prompt("Enter your NAS port (default 8080):", GM_getValue("nasPort", "8080"));
+  const nasProtocol = prompt("Connection protocol (default https):", GM_getValue("nasProtocol", "https"));
   const username = prompt("Enter your NAS username:", GM_getValue("username", ""));
   const password = prompt("Enter your NAS password:", GM_getValue("password", ""));
   const temp = prompt("Location of Temporary Files:", GM_getValue("temp", ""));
@@ -29,6 +30,7 @@ async function setUpNasSettings() {
   
   GM_setValue("nasIP", nasIP);
   GM_setValue("nasPort", nasPort);
+  GM_setValue("nasProtocol", nasProtocol);
   GM_setValue("username", username);
   GM_setValue("password", password);
   GM_setValue("temp", temp);
@@ -40,6 +42,7 @@ async function setUpNasSettings() {
 function sendToNas(downloadUrl) {
   const nasIP = GM_getValue("nasIP");
   const nasPort = GM_getValue("nasPort");
+  const nasProtocol = GM_getValue("nasProtocol");
   const username = GM_getValue("username");
   const password = GM_getValue("password");
   const temp = GM_getValue("temp");
@@ -54,7 +57,7 @@ function sendToNas(downloadUrl) {
   // Authenticate with QNAP to get a session token
   GM_xmlhttpRequest({
     method: "POST",
-    url: `http://${nasIP}:${nasPort}/downloadstation/V5/Misc/Login`,
+    url: `${nasProtocol}://${nasIP}:${nasPort}/downloadstation/V5/Misc/Login`,
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     data: `user=${username}&pass=${btoa(password)}`,
     onload: function({response}) {
@@ -63,7 +66,7 @@ function sendToNas(downloadUrl) {
         // Start the download task using the acquired session token (sid)
         GM_xmlhttpRequest({
           method: "GET",
-          url: `http://${nasIP}:${nasPort}/downloadstation/V5/Task/AddUrl?sid=${sid}&url=${encodeURIComponent(downloadUrl)}&temp=${temp}&move=${move}`,
+          url: `${nasProtocol}://${nasIP}:${nasPort}/downloadstation/V5/Task/AddUrl?sid=${sid}&url=${encodeURIComponent(downloadUrl)}&temp=${temp}&move=${move}`,
           onload: function({response}) {
             const taskData = JSON.parse(response || {});
             if (taskData && taskData.error === 0) {
