@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            Download on QNAP NAS
 // @description     Download links or magnet links on QNAP NAS via Download Station, you can input url manually or right-click on the link and then hit on "Download from Last Link"
-// @version         1.02
+// @version         1.03
 // @match           *://*/*
 // @run-at          document-end
 // @grant           none
@@ -25,28 +25,31 @@ async function setUpNasSettings() {
   const nasProtocol = prompt("Connection protocol (default https):", GM_getValue("nasProtocol", "https"));
   const username = prompt("Enter your NAS username:", GM_getValue("username", ""));
   const password = prompt("Enter your NAS password:", GM_getValue("password", ""));
-  const temp = prompt("Location of Temporary Files:", GM_getValue("temp", ""));
-  const move = prompt("Move the completed downloads to:", GM_getValue("move", ""));
+  const tempLocation = prompt("Location of Temporary Files:", GM_getValue("tempLocation", ""));
+  const moveLocation = prompt("Move the completed downloads to:", GM_getValue("moveLocation", ""));
+  const moveLocationAlternative = prompt("Move the completed downloads to (alternative):", GM_getValue("moveLocationAlternative", ""));
   
   GM_setValue("nasIP", nasIP);
   GM_setValue("nasPort", nasPort);
   GM_setValue("nasProtocol", nasProtocol);
   GM_setValue("username", username);
   GM_setValue("password", password);
-  GM_setValue("temp", temp);
-  GM_setValue("move", move);
+  GM_setValue("tempLocation", tempLocation);
+  GM_setValue("moveLocation", moveLocation);
+  GM_setValue("moveLocationAlternative", moveLocationAlternative);
   alert("NAS settings saved.");
 }
 
 // Function to send download link to QNAP Download Station
-function sendToNas(downloadUrl) {
+function sendToNas(downloadUrl, useAlternativeLocation = false) {
   const nasIP = GM_getValue("nasIP");
   const nasPort = GM_getValue("nasPort");
   const nasProtocol = GM_getValue("nasProtocol");
   const username = GM_getValue("username");
   const password = GM_getValue("password");
-  const temp = GM_getValue("temp");
-  const move = GM_getValue("move");
+  const tempLocation = GM_getValue("tempLocation");
+  const moveLocation = GM_getValue("moveLocation");
+  const moveLocationAlternative = GM_getValue("moveLocationAlternative");
   
   if (!nasIP || !nasPort || !username || !password) {
     alert("Please configure your NAS settings first.");
@@ -66,7 +69,7 @@ function sendToNas(downloadUrl) {
         // Start the download task using the acquired session token (sid)
         GM_xmlhttpRequest({
           method: "GET",
-          url: `${nasProtocol}://${nasIP}:${nasPort}/downloadstation/V5/Task/AddUrl?sid=${sid}&url=${encodeURIComponent(downloadUrl)}&temp=${temp}&move=${move}`,
+          url: `${nasProtocol}://${nasIP}:${nasPort}/downloadstation/V5/Task/AddUrl?sid=${sid}&url=${encodeURIComponent(downloadUrl)}&temp=${tempLocation}&move=${useAlternativeLocation ? moveLocationAlternative : moveLocation}`,
           onload: function({response}) {
             const taskData = JSON.parse(response || {});
             if (taskData && taskData.error === 0) {
@@ -97,6 +100,9 @@ document.addEventListener("contextmenu", (event) => {
     GM_registerMenuCommand("Download from Last Link", () => {
       sendToNas(target.href);
     });
+    GM_registerMenuCommand("Download from Last Link (alternative)", () => {
+      sendToNas(target.href, true);
+    });
   }
 });
 
@@ -106,8 +112,9 @@ GM_registerMenuCommand("Configure NAS Settings", setUpNasSettings);
 // Menu command to manually enter a link for download
 GM_registerMenuCommand("Download from Manual Link", () => {
   const manualLink = prompt("Enter the URL or magnet link to download:");
+  const useAlternativeLocation = prompt("Use alternative location? (y/n)");
   if (manualLink) {
-    sendToNas(manualLink);
+    sendToNas(manualLink, !(['n', 'no', ''].some(answer => useAlternativeLocation ? answer === useAlternativeLocation?.toLowerCase() : true)));
   } else {
     alert("No link provided.");
   }
